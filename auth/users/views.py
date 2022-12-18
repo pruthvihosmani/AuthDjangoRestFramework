@@ -1,8 +1,13 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
+import datetime
+import jwt
 from rest_framework.exceptions import AuthenticationFailed
-from .serializers import UserSerializer
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
 from .models import User
+from .serializers import UserSerializer
+
+
 # Create your views here.
 
 
@@ -13,12 +18,11 @@ class RegisterView(APIView):
         serializer.save()
         return Response(serializer.data)
 
+
 class LoginView(APIView):
     def post(self, request):
         email = request.data['email']
         password = request.data['password']
-
-
 
         user = User.objects.filter(email=email).first()
 
@@ -28,12 +32,15 @@ class LoginView(APIView):
         if not user.check_password(password):
             raise AuthenticationFailed("Incorrect password!")
 
+        payload = {
+            'id': user.id,
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=60),
+            'iat': datetime.datetime.utcnow()
+        }
+
+        # token = jwt.encode(payload, 'secret', algorithm='HS256').decode('utf-8')
+        token = jwt.encode(payload, 'secret', algorithm='HS256').decode('utf-8')
+
         return Response({
-            'message': 'success'
+            'jwt': token
         })
-
-
-
-
-
-
